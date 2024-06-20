@@ -1,30 +1,91 @@
 import { useRef, useState } from "react";
 import Header from "./Header";
 import { checkValidData } from "../utils/validate";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+} from "firebase/auth";
+import { auth } from "../utils/firebase";
+import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { addUser } from "../utils/userSlice";
 
 const Login = () => {
+  const navigate = useNavigate();
   const [isSignInForm, setIsSignInForm] = useState(true);
   const [errorMessage, setErrorMessage] = useState(null);
 
-  const name = useRef(null);
-  const email = useRef(null);
-  const password = useRef(null);
+  const dispatch = useDispatch();
+
+  const nameRef = useRef(null);
+  const emailRef = useRef(null);
+  const passwordRef = useRef(null);
 
   const ToggleSignInForm = () => {
     setIsSignInForm(!isSignInForm);
   };
 
   const handleButtonClick = () => {
-    //validate form data
-    // console.log(email.current.value);
-    // console.log( password.current.value);
-    const message = checkValidData(
-      email.current.value,
-      password.current.value,
-      name.current.value
-    );
-    // console.log(message);
+    const emailValue = emailRef.current ? emailRef.current.value : "";
+    const passwordValue = passwordRef.current ? passwordRef.current.value : "";
+    const nameValue =
+      !isSignInForm && nameRef.current ? nameRef.current.value : "";
+
+    const message = checkValidData(emailValue, passwordValue, nameValue);
     setErrorMessage(message);
+
+    if (message) return;
+
+    if (!isSignInForm) {
+      createUserWithEmailAndPassword(auth, emailValue, passwordValue)
+        .then((userCredential) => {
+          const user = userCredential.user;
+
+          updateProfile(user, {
+            displayName: nameValue,
+            photoURL: "https://avatars.githubusercontent.com/u/101493981?v=4",
+          })
+            .then(() => {
+              const { uid, email, displayName, photoURL } = auth.currentUser;
+              dispatch(
+                addUser({
+                  uid: uid,
+                  email: email,
+                  displayName: displayName,
+                  photoURL: photoURL,
+                })
+              );
+              navigate("/browse");
+            })
+            .catch((error) => {
+              setErrorMessage(error.message);
+            });
+
+          console.log(user);
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          setErrorMessage(errorCode + " - " + errorMessage);
+          // ..
+        });
+    } else {
+      // Sign In logic
+      signInWithEmailAndPassword(auth, emailValue, passwordValue)
+        .then((userCredential) => {
+          // Signed in
+          const user = userCredential.user;
+          console.log(user);
+          navigate("/browse");
+          // ...
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          setErrorMessage(errorCode + " - " + errorMessage);
+        });
+    }
   };
 
   return (
@@ -32,7 +93,7 @@ const Login = () => {
       <Header />
       <div className="absolute">
         <img
-          className="bg-black"
+          className=""
           src="https://assets.nflxext.com/ffe/siteui/vlv3/a56dc29b-a0ec-4f6f-85fb-50df0680f80f/2f8ae902-8efe-49bb-9a91-51b6fcc8bf46/IN-en-20240617-popsignuptwoweeks-perspective_alpha_website_small.jpg"
           alt="background"
         />
@@ -46,21 +107,23 @@ const Login = () => {
         </h1>
         {!isSignInForm && (
           <input
-            ref={name}
+            autoComplete="off"
+            ref={nameRef}
             type="text"
             placeholder="Full Name"
             className="px-4 py-3 my-4 w-full bg-gray-800 bg-opacity-70 rounded-lg text-sm"
           />
         )}
         <input
-          ref={email}
-          type="text"
+          autoComplete="off"
+          ref={emailRef}
+          type="email"
           placeholder="Email Address"
           className="px-4 py-3 my-4 w-full bg-gray-800 bg-opacity-70 rounded-lg text-sm"
         />
-
         <input
-          ref={password}
+          autoComplete="off"
+          ref={passwordRef}
           type="password"
           placeholder="Password"
           className="px-4 py-3 my-4 w-full bg-gray-800 bg-opacity-70 rounded-lg text-sm"
