@@ -42,7 +42,7 @@ const GptSearchBar = () => {
       url: "https://api.edenai.run/v2/text/chat",
       headers: {
         authorization:
-          "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZjVhN2I1YTktZDY1Yi00YTE3LWI3NzYtMDJmNTlmYjE2NTIyIiwidHlwZSI6ImFwaV90b2tlbiJ9.CZ7mCLxAXeOXPZPS6XlE0jaHUJnIj96mGd0Ypaw2gXY",
+          "Bearer " + process.env.REACT_APP_EDENAI_KEY,
       },
       data: {
         providers: "openai",
