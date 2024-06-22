@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import Header from "./Header";
 import { checkValidData } from "../utils/validate";
 import {
@@ -7,15 +7,15 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { auth } from "../utils/firebase";
-import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { addUser } from "../utils/userSlice";
-import { BG_URL, USER_AVATAR } from "../utils/constants";
+import { USER_AVATAR } from "../utils/constants";
+import bg from "../images/bg.jpeg";
 
 const Login = () => {
-  const navigate = useNavigate();
   const [isSignInForm, setIsSignInForm] = useState(true);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const dispatch = useDispatch();
 
@@ -38,6 +38,8 @@ const Login = () => {
 
     if (message) return;
 
+    setIsLoading(true);
+
     if (!isSignInForm) {
       createUserWithEmailAndPassword(auth, emailValue, passwordValue)
         .then((userCredential) => {
@@ -57,46 +59,62 @@ const Login = () => {
                   photoURL: photoURL,
                 })
               );
+              simulateDelay();
             })
             .catch((error) => {
               setErrorMessage(error.message);
+              setIsLoading(false);
             });
         })
         .catch((error) => {
           const errorCode = error.code;
           const errorMessage = error.message;
           setErrorMessage(errorCode + " - " + errorMessage);
+          setIsLoading(false);
         });
     } else {
       // Sign In logic
       signInWithEmailAndPassword(auth, emailValue, passwordValue)
         .then((userCredential) => {
           const user = userCredential.user;
+          simulateDelay();
         })
         .catch((error) => {
           const errorCode = error.code;
           const errorMessage = error.message;
           setErrorMessage(errorCode + " - " + errorMessage);
+          setIsLoading(false);
         });
     }
+  };
+
+  const simulateDelay = () => {
+    setTimeout(() => {
+      setIsLoading(false);
+      // Navigate 
+      console.log("Navigating to browse page...");
+    }, 2000);
   };
 
   return (
     <div className="font-geist">
       <Header />
       <div className="absolute">
-        <img className="h-screen object-cover md:object-cover md:h-auto" src={BG_URL} alt="background" />
+        <img
+          className="h-screen object-cover md:object-cover md:h-full"
+          src={bg}
+          alt="background"
+        />
       </div>
       <form
         onSubmit={(e) => e.preventDefault()}
-        className="w-full md:w-3/12 absolute p-12 bg-black my-36 mx-auto right-0 left-0 text-white rounded-lg bg-opacity-75"
+        className="w-full md:w-4/12 absolute p-10 md:8 bg-black my-36 mx-auto right-0 left-0 text-white rounded-2xl bg-opacity-80"
       >
-        <h1 className="font-bold text-3xl py-4">
+        <h1 className="font-bold text-3xl py-2 text-center">
           {isSignInForm ? "Sign In" : "Sign Up"}
         </h1>
         {!isSignInForm && (
           <input
-            autoComplete="off"
             ref={nameRef}
             type="text"
             placeholder="Full Name"
@@ -104,14 +122,12 @@ const Login = () => {
           />
         )}
         <input
-          autoComplete="off"
           ref={emailRef}
           type="email"
-          placeholder="Email Address"
+          placeholder="Email"
           className="px-4 py-3 my-4 w-full bg-gray-800 bg-opacity-70 rounded-lg text-sm"
         />
         <input
-          autoComplete="off"
           ref={passwordRef}
           type="password"
           placeholder="Password"
@@ -119,15 +135,31 @@ const Login = () => {
         />
         <p className="text-red-500 text-xs font-medium">{errorMessage}</p>
         <button
-          className="px-4 py-2 my-6 bg-red-700 w-full rounded-lg"
+          className="px-4 py-2 my-6 bg-red-700 w-full rounded-lg font-semibold transition duration-300 ease-in-out hover:bg-red-500 hover:shadow-lg flex items-center justify-center"
           onClick={handleButtonClick}
+          disabled={isLoading}
         >
-          {isSignInForm ? "Sign In" : "Sign Up"}
+          {isLoading ? (
+            <div className="w-6 h-6 border-t-4 border-white border-solid rounded-full animate-spin"></div>
+          ) : (
+            isSignInForm ? "Sign In" : "Sign Up"
+          )}
         </button>
-        <p className="py-4 text-sm cursor-pointer" onClick={ToggleSignInForm}>
-          {isSignInForm
-            ? "New to MoviesFlix? Sign Up Now."
-            : "Already registered? Sign In Now."}
+        <p
+          className="py-4 text-[16px] text-center"
+          onClick={ToggleSignInForm}
+        >
+          {isSignInForm ? (
+            <>
+              New to MoviesFlix?{" "}
+              <span className="hover:text-red-500 cursor-pointer">Sign Up</span>.
+            </>
+          ) : (
+            <>
+              Already registered?{" "}
+              <span className="hover:text-red-500 cursor-pointer">Sign In</span>.
+            </>
+          )}
         </p>
       </form>
     </div>
